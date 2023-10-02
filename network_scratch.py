@@ -1,8 +1,7 @@
 import time
-
 import numpy as np
-
 import utils
+
 
 
 class NeuralNetwork():
@@ -37,7 +36,6 @@ class NeuralNetwork():
 
 
 
-
     def _initialize_weights(self):
 
         np.random.seed(self.random_state)
@@ -50,31 +48,46 @@ class NeuralNetwork():
         return self.weights
 
 
+
     def _forward_pass(self, x_train):
-        '''
-        TODO: Implement the forward propagation algorithm.
-        The method should return the output of the network.
-        '''
-        pass
+        # Setting the first input as the input data
+        self.A[0] = x_train
+        # Loop through each layer of the network until the second last one
+        for i in range(0, len(self.weights) - 1):
+            # Calculate the weighted sum of inputs for the current layer
+            self.Z[i] = np.dot(self.weights[i], self.A[i])
+            # Apply the activation function to get the output for the current layer 
+            self.A[i + 1] = self.activation_func(self.Z[i])
+        # Compute the weighted sum for the last layer
+        self.Z[-1] = np.dot(self.weights[-1], self.A[-2])
+        # Apply the output function to the final layer to get a probability distribution over classes
+        self.A[-1] = self.output_func(self.Z[-1])
+        return self.A[-1]
 
 
 
+    # Disclaimer: I got inspired by ChatGPT in this TODO question and then completed the codes
     def _backward_pass(self, y_train, output):
-        '''
-        TODO: Implement the backpropagation algorithm responsible for updating the weights of the neural network.
-        The method should return a list of the weight gradients which are used to update the weights in self._update_weights().
+        # Initialize the deltas (errors) for each layer
+        deltas = [None] * len(self.weights)
+        # Compute the delta for the output layer based on the difference between predicted and actual values
+        deltas[-1] = self.cost_func_deriv(y_train, output) * self.output_func_deriv(self.Z[-1])
+        # Then compute the deltas for the remaining layers
+        for i in range(len(deltas) -2, -1, -1):
+            # Delta is calculated based on the error of the next layer and the derivative of the activation function at the current layer
+            deltas[i] = np.dot(self.weights[i + 1].T, deltas[i + 1]) * self.activation_func_deriv(self.Z[i])
+        # Compute the gradient of the weights for each layer based on deltas and layer outputs
+        weight_gradients = []
+        for i in range(len(deltas)):
+            weight_gradients.append(np.outer(deltas[i], self.A[i]))
+        # Return the list of weight gradients for each layer
+        return weight_gradients
 
-        '''
-        pass 
-    
 
 
     def _update_weights(self,weight_gradients):
-        '''
-        TODO: Update the network weights according to stochastic gradient descent.
-
-        '''
-        pass
+        for i in range(len(self.weights)):
+            self.weights[i] -= self.learning_rate * weight_gradients[i]
 
 
 
@@ -91,6 +104,7 @@ class NeuralNetwork():
         return train_accuracy, val_accuracy
 
 
+
     def compute_accuracy(self, x_val, y_val):
         predictions = []
 
@@ -101,12 +115,10 @@ class NeuralNetwork():
         return np.mean(predictions)
 
 
+
     def predict(self, x):
-        '''
-        TODO: Implement the prediction making of the network.
-        The method should return the index of the most likeliest output class.
-        '''
-        pass
+        output = self._forward_pass(x)
+        return np.argmax(output)
 
 
 
